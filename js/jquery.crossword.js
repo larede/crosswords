@@ -25,7 +25,7 @@
 			
 			// append clues markup after puzzle wrapper div
 			// This should be moved into a configuration object
-			this.after('<div id="puzzle-clues"><h2>Across</h2><ol id="across"></ol><h2>Down</h2><ol id="down"></ol></div>');
+			this.after('<div id="puzzle-clues"><h2>Horizontal</h2><ol id="across"></ol><h2>Vertical</h2><ol id="down"></ol></div>');
 			
 			// initialize some variables
 			var tbl = ['<table id="puzzle">'],
@@ -261,11 +261,25 @@
 					};	
 					
 					// Put entry number in first 'light' of each entry, skipping it if already present
-					for (var i=1, p = entryCount; i < p; ++i) {
+					for (var i=1, p = entryCount; i <= p; ++i) {
 						$groupedLights = $('.entry-' + i);
 						if(!$('.entry-' + i +':eq(0) span').length){
 							$groupedLights.eq(0)
-								.append('<span>' + puzz.data[i].position + '</span>');
+								.append('<span>' + puzz.data[i-1].position + '</span>');
+
+							var posChar = puzz.data[i-1].answer.indexOf("-");
+							if (posChar > 0) {
+								$('.entry-' + i +':eq(' + posChar +') input').val("-");
+								$('.entry-' + i +':eq(' + posChar +') input').attr('readonly', true);
+								$('.entry-' + i +':eq(' + posChar +') input').css('background-color','#ffffff');
+
+								var posChar = puzz.data[i-1].answer.indexOf("-", posChar + 1)
+								if (posChar > 0) {
+									$('.entry-' + i +':eq(' + posChar +') input').val("-");
+									$('.entry-' + i +':eq(' + posChar +') input').attr('readonly', true);
+									$('.entry-' + i +':eq(' + posChar +') input').css('background-color','#ffffff');
+								}	
+							}
 						}
 					}	
 					
@@ -287,30 +301,45 @@
 					
 					util.getActivePositionFromClassGroup($(e.target));
 				
-					valToCheck = puzz.data[activePosition].answer.toLowerCase();
+					for (var i=0; i < entryCount; ++i) {
+						valToCheck = puzz.data[i].answer.toLowerCase();
 
-					currVal = $('.position-' + activePosition + ' input')
-						.map(function() {
-					  		return $(this)
-								.val()
-								.toLowerCase();
-						})
-						.get()
-						.join('');
-					
-					//console.log(currVal + " " + valToCheck);
-					if(valToCheck === currVal){	
-						$('.active')
+						currVal = $('.position-' + i + ' input')
+							.map(function() {
+								return $(this)
+									.val()
+									.toLowerCase();
+							})
+							.get()
+							.join('');
+						
+						//console.log(currVal + " " + valToCheck);
+						if(valToCheck === currVal){	
+							$('.position-' + i + ' input')
 							.addClass('done')
 							.removeClass('active');
-					
-						$('.clues-active').addClass('clue-done');
+						
+							$('li[data-position=' + i + ']').addClass('clue-done');
 
-						solved.push(valToCheck);
-						solvedToggle = true;
-						return;
-					}
-					
+							if (activePosition === i) {
+								solved.push(valToCheck);
+								solvedToggle = true;
+								return;
+							}
+						} else {
+							for (var j=0, s=solved.length; j < s; j++) {
+								if(valToCheck === solved[j]){
+									solved.pop(j);
+								}
+							}
+
+							$('.position-' + i + ' input')
+							.removeClass('done')
+							.addClass('active');
+							$('li[data-position=' + i + ']').removeClass('clue-done');
+							solvedToggle = false;
+						}
+					}						
 					currOri === 'across' ? nav.nextPrevNav(e, 39) : nav.nextPrevNav(e, 40);
 					
 					//z++;
